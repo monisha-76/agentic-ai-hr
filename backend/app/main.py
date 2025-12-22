@@ -1,10 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from app.utils.pdf_reader import extract_text_from_pdf
 from app.crud import save_resume
+from app.routes import skill_routes ,jd_match_routes
 import shutil
 import os
 
 app = FastAPI()
+app.include_router(skill_routes.router)
+app.include_router(jd_match_routes.router)
 
 
 @app.get("/")
