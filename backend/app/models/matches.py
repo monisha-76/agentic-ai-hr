@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 from bson import ObjectId
 
-# Load environment variables
 load_dotenv()
 
 MONGO_USERNAME = os.getenv("MONGO_USERNAME")
@@ -12,7 +11,6 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 MONGO_CLUSTER = os.getenv("MONGO_CLUSTER")
 
-# Build Atlas URI (same as job_description.py)
 MONGO_URI = (
     f"mongodb+srv://{MONGO_USERNAME}:"
     f"{MONGO_PASSWORD}@{MONGO_CLUSTER}/"
@@ -26,26 +24,29 @@ matches_collection = db["matches"]
 
 
 def save_match(resume_id, matches):
-    """
-    Save JD match results for a resume.
-    """
     match_doc = {
         "resume_id": ObjectId(resume_id),
         "matches": matches,
         "created_at": datetime.utcnow()
     }
-    return matches_collection.insert_one(match_doc).inserted_id
+    return str(matches_collection.insert_one(match_doc).inserted_id)
+
+
+def serialize_match(doc):
+    doc["_id"] = str(doc["_id"])
+    doc["resume_id"] = str(doc["resume_id"])
+    return doc
 
 
 def get_matches_for_resume(resume_id):
-    """Fetch all match documents for a resume"""
-    return list(
-        matches_collection.find({"resume_id": ObjectId(resume_id)})
+    results = matches_collection.find(
+        {"resume_id": ObjectId(resume_id)}
     )
+    return [serialize_match(doc) for doc in results]
 
 
 def get_matches_for_jd(jd_id):
-    """Fetch all resumes matched to a JD"""
-    return list(
-        matches_collection.find({"matches.jd_id": jd_id})
+    results = matches_collection.find(
+        {"matches.jd_id": ObjectId(jd_id)}
     )
+    return [serialize_match(doc) for doc in results]

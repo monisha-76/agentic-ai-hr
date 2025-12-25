@@ -18,6 +18,10 @@ MONGO_URI = (
     "?retryWrites=true&w=majority"
 )
 
+
 client = AsyncIOMotorClient(MONGO_URI)
 database = client[MONGO_DB_NAME]
+
+
 resumes_collection = database["resumes"]
+users_collection = database["users"]   

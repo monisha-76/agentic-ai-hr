@@ -1,43 +1,41 @@
 from fastapi import APIRouter, HTTPException, Body
 from bson import ObjectId
-
+from app.config import database
 from app.models.job_description import create_jd, get_all_jds
 from app.skill_extraction_agent import resumes_collection
 from app.agents.jd_matching_agent import JDMatchingAgent
 from app.models.matches import save_match
-
-# ✅ ADD THIS IMPORT
 from app.agents.jd_skill_extraction_agent import JDSkillExtractionAgent
-
 
 router = APIRouter(
     prefix="/jd",
     tags=["Job Description"]
 )
 
-# Agents
-agent = JDMatchingAgent()
-jd_skill_agent = JDSkillExtractionAgent()   # ✅ NEW
+# Mongo collection
+jd_collection = database["job_descriptions"]
+matches_collection = database["matches"]
 
+# Agents
+match_agent = JDMatchingAgent()
+jd_skill_agent = JDSkillExtractionAgent()
+
+
+# ===============================
+# CREATE JOB DESCRIPTION
+# ===============================
 
 @router.post("/create")
 def add_job_description(
     title: str = Body(..., example="Senior Python Developer"),
-    description: str = Body(..., example="We need a Python dev with 5+ years experience...")
+    description: str = Body(..., example="We need a Python dev with FastAPI experience")
 ):
-    """
-    Create JD via Postman
-    → Extract skills from JD
-    → Store title, description, skills
-    """
-
     if not title or not description:
         raise HTTPException(status_code=400, detail="Title and description are required")
 
-    # ✅ EXTRACT SKILLS FROM JD TEXT
+    # Extract skills from JD text
     skills = jd_skill_agent.extract_skills(description)
 
-    # ✅ SAVE JD WITH SKILLS
     jd_id = create_jd(title, description, skills)
 
     return {
@@ -47,20 +45,42 @@ def add_job_description(
     }
 
 
+# ===============================
+# GET ALL JOB DESCRIPTIONS
+# (Frontend-friendly)
+
 @router.get("/all")
 def list_all_jds():
-    """Fetch all Job Descriptions"""
-    jds = get_all_jds()
-    return {"job_descriptions": jds}
+    return get_all_jds()
 
+
+
+
+# ===============================
+# DELETE JOB DESCRIPTION
+# ===============================
+@router.delete("/delete/{jd_id}")
+def delete_jd(jd_id: str):
+    try:
+        result = jd_collection.delete_one({"_id": ObjectId(jd_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JD ID")
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Job Description not found")
+
+    return {"message": "Job Description deleted successfully"}
+
+
+# ===============================
+# MATCH ONE RESUME TO ALL JDs
+# ===============================
 
 @router.get("/match/{resume_id}")
 def match_resume_to_jd(resume_id: str, top_k: int = 3):
-    """
-    Match ONE resume against ALL JDs
-    """
 
     resume = resumes_collection.find_one({"_id": ObjectId(resume_id)})
+
     if not resume or "skills" not in resume:
         raise HTTPException(status_code=400, detail="Resume not processed or skills missing")
 
@@ -70,18 +90,21 @@ def match_resume_to_jd(resume_id: str, top_k: int = 3):
     if not jds:
         return {"message": "No job descriptions available"}
 
-    matches = agent.match_resume_to_jds(resume_skills, jds, top_k)
+    matches = match_agent.match_resume_to_jds(resume_skills, jds, top_k)
 
     save_match(resume_id, matches)
 
-    return {"resume_id": resume_id, "matches": matches}
+    return {
+        "resume_id": resume_id,
+        "matches": matches
+    }
 
 
+# =============================
+# MATCH ALL RESUMES TO ALL JDs
+# =============================
 @router.post("/match_all")
 def match_all_resumes(top_k: int = 3):
-    """
-    Match ALL resumes against ALL JDs
-    """
 
     jds = get_all_jds()
     if not jds:
@@ -93,7 +116,7 @@ def match_all_resumes(top_k: int = 3):
         resume_id = str(resume["_id"])
         resume_skills = resume["skills"]
 
-        matches = agent.match_resume_to_jds(resume_skills, jds, top_k)
+        matches = match_agent.match_resume_to_jds(resume_skills, jds, top_k)
         save_match(resume_id, matches)
         total_matched += 1
 
