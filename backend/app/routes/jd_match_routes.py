@@ -4,7 +4,7 @@ from app.config import database
 from app.models.job_description import create_jd, get_all_jds
 from app.skill_extraction_agent import resumes_collection
 from app.agents.jd_matching_agent import JDMatchingAgent
-from app.models.matches import save_match
+from app.models.matches import save_match, get_match_count_per_jd
 from app.agents.jd_skill_extraction_agent import JDSkillExtractionAgent
 
 router = APIRouter(
@@ -24,7 +24,6 @@ jd_skill_agent = JDSkillExtractionAgent()
 # ===============================
 # CREATE JOB DESCRIPTION
 # ===============================
-
 @router.post("/create")
 def add_job_description(
     title: str = Body(..., example="Senior Python Developer"),
@@ -47,22 +46,28 @@ def add_job_description(
 
 # ===============================
 # GET ALL JOB DESCRIPTIONS
-# (Frontend-friendly)
-
+# (Frontend-friendly with matched_profiles)
+# ===============================
 @router.get("/all")
 def list_all_jds():
-    return get_all_jds()
+    jds = get_all_jds()  # list of all JDs
+    match_counts = get_match_count_per_jd()  # dict JD ID → number of matched resumes
 
+    # Add `matched_profiles` field to each JD
+    for jd in jds:
+        jd_id = jd["_id"]
+        jd["matched_profiles"] = match_counts.get(jd_id, 0)
 
+    return jds
 
 
 # ===============================
 # DELETE JOB DESCRIPTION
 # ===============================
 @router.delete("/delete/{jd_id}")
-def delete_jd(jd_id: str):
+async def delete_jd(jd_id: str):
     try:
-        result = jd_collection.delete_one({"_id": ObjectId(jd_id)})
+        result = await jd_collection.delete_one({"_id": ObjectId(jd_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JD ID")
 
@@ -75,7 +80,6 @@ def delete_jd(jd_id: str):
 # ===============================
 # MATCH ONE RESUME TO ALL JDs
 # ===============================
-
 @router.get("/match/{resume_id}")
 def match_resume_to_jd(resume_id: str, top_k: int = 3):
 
@@ -100,9 +104,9 @@ def match_resume_to_jd(resume_id: str, top_k: int = 3):
     }
 
 
-# =============================
+# ===============================
 # MATCH ALL RESUMES TO ALL JDs
-# =============================
+# ===============================
 @router.post("/match_all")
 def match_all_resumes(top_k: int = 3):
 

@@ -9,21 +9,24 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+  try {
+    const res = await loginUser({ email, password });
+
+    // Save token to localStorage
+    localStorage.setItem("token", res.data.token);
+
+    // Redirect based on role
+    if (res.data.role === "admin") {
       window.location.href = "/admin/admindashboard";
-      return;
+    } else {
+      window.location.href = "/candidate/Candidashboard";
     }
-
-    try {
-      const res = await loginUser({ email, password });
-      localStorage.setItem("token", res.data.token);
-      window.location.href = "/candidate";
-    } catch {
-      alert("Invalid credentials");
-    }
-  };
+  } catch (err) {
+    alert("Invalid credentials");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">

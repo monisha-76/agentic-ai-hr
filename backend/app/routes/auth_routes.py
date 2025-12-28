@@ -38,6 +38,7 @@ async def login(credentials: LoginModel):
         and credentials.password == ADMIN_PASSWORD
     ):
         token = create_access_token({
+            "id":"admin",
             "email": credentials.email,
             "role": "admin"
         })
@@ -57,6 +58,7 @@ async def login(credentials: LoginModel):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token({
+        "id": str(user["_id"]),
         "email": user["email"],
         "role": "candidate"
     })

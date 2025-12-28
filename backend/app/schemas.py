@@ -7,6 +7,7 @@ class ResumeCreate(BaseModel):
     name: str
     email: EmailStr
     content: str
+    jd_id: str
 
 
 class ResumeResponse(BaseModel):

@@ -50,3 +50,22 @@ def get_matches_for_jd(jd_id):
         {"matches.jd_id": ObjectId(jd_id)}
     )
     return [serialize_match(doc) for doc in results]
+
+def get_match_count_per_jd():
+    """
+    Returns a dictionary of JD ID → number of matched resumes
+    """
+    pipeline = [
+        {"$unwind": "$matches"},  # flatten matches array
+        {"$group": {
+            "_id": "$matches.jd_id",
+            "count": {"$sum": 1}
+        }}
+    ]
+    results = list(matches_collection.aggregate(pipeline))
+    
+    # Convert ObjectId to string
+    match_count = {}
+    for r in results:
+        match_count[str(r["_id"])] = r["count"]
+    return match_count
