@@ -22,7 +22,9 @@ db = client[MONGO_DB_NAME]
 job_descriptions_collection = db["job_descriptions"]
 
 
-def create_jd(title: str, description: str, skills: list = []):
+def create_jd(title: str, description: str, skills: list = None):
+    if skills is None:
+        skills=[]
     """
     Create a new Job Description in MongoDB.
     """

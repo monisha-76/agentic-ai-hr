@@ -19,6 +19,8 @@ const CandidateDashboard = () => {
     email: "",
     resume: null
   });
+  const [submitting, setSubmitting] = useState(false);
+
 
   const fetchJDs = async () => {
     try {
@@ -66,14 +68,17 @@ const CandidateDashboard = () => {
       return;
     }
 
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("email", formData.email);
-    data.append("resume", formData.resume);
-    data.append("jdId", selectedJD._id);
+   setSubmitting(true); 
 
+     const data = new FormData();
+
+  // ✅ EXACT KEYS REQUIRED BY BACKEND
+  data.append("file", formData.resume);         // ✅ MUST be "file"
+  data.append("name", formData.name);
+  data.append("email", formData.email);
+  data.append("jd_id", selectedJD._id);  
     try {
-      await api.post("/apply", data, {
+      await api.post("/upload-resume", data, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       alert("Application submitted successfully!");
@@ -82,6 +87,8 @@ const CandidateDashboard = () => {
     } catch (err) {
       console.error("Failed to submit application", err);
       alert("Failed to submit application");
+    }finally{
+      setSubmitting(false);
     }
   };
 
@@ -100,17 +107,17 @@ const CandidateDashboard = () => {
           <StatCard
             title="Total Job Openings"
             value={jds.length}
-            color="bg-gray-200 text-black"
+            color="bg-gray-500"
           />
           <StatCard
             title="My Applications"
             value={stats.myApplications}
-            color="bg-gray-200 text-black"
+            color="bg-gray-500 text-black"
           />
           <StatCard
             title="Total Applications"
             value={stats.totalApplications}
-            color="bg-gray-200 text-black"
+            color="bg-gray-500 text-black"
           />
         </div>
 
@@ -187,12 +194,17 @@ const CandidateDashboard = () => {
                   className="w-full"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 text-white rounded-xl py-2 hover:bg-indigo-700 transition"
-              >
-                Submit Application
-              </button>
+            <button
+            type="submit"
+            disabled={submitting}
+            className={`w-full rounded-xl py-2 transition 
+              ${submitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+          >
+            {submitting ? "Submitting..." : "Submit Application"}
+          </button>
             </form>
           </div>
         </div>
