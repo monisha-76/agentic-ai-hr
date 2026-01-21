@@ -49,9 +49,9 @@ def add_job_description(
 # (Frontend-friendly with matched_profiles)
 # ===============================
 @router.get("/all")
-def list_all_jds():
+async def list_all_jds():
     jds = get_all_jds()  # list of all JDs
-    match_counts = get_match_count_per_jd()  # dict JD ID → number of matched resumes
+    match_counts = await get_match_count_per_jd()  # dict JD ID → number of matched resumes
 
     # Add `matched_profiles` field to each JD
     for jd in jds:

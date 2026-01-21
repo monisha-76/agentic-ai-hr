@@ -1,71 +1,53 @@
-from pymongo import MongoClient
-from datetime import datetime
-from dotenv import load_dotenv
-import os
+# app/models/matches.py
+from app.config import database
 from bson import ObjectId
+from datetime import datetime
 
-load_dotenv()
+matches_collection = database["matches"]  # Motor collection
 
-MONGO_USERNAME = os.getenv("MONGO_USERNAME")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
-MONGO_CLUSTER = os.getenv("MONGO_CLUSTER")
-
-MONGO_URI = (
-    f"mongodb+srv://{MONGO_USERNAME}:"
-    f"{MONGO_PASSWORD}@{MONGO_CLUSTER}/"
-    f"{MONGO_DB_NAME}?retryWrites=true&w=majority"
-)
-
-client = MongoClient(MONGO_URI)
-db = client[MONGO_DB_NAME]
-
-matches_collection = db["matches"]
-
-
-def save_match(resume_id, matches):
+async def save_match(resume_id, candidate_name, candidate_email, jd_id, match_result):
+    """
+    Save a single match document for a resume & JD.
+    match_result should already contain: score, rank, matched_skills, extra_skills
+    """
     match_doc = {
         "resume_id": ObjectId(resume_id),
-        "matches": matches,
+        "candidate_name": candidate_name,
+        "candidate_email": candidate_email,
+        "jd_id": ObjectId(jd_id),
+        "matches": [match_result],
         "created_at": datetime.utcnow()
     }
-    return str(matches_collection.insert_one(match_doc).inserted_id)
+    result = await matches_collection.insert_one(match_doc)
+    return str(result.inserted_id)
 
 
 def serialize_match(doc):
     doc["_id"] = str(doc["_id"])
     doc["resume_id"] = str(doc["resume_id"])
+    doc["jd_id"] = str(doc["jd_id"])
     return doc
 
 
-def get_matches_for_resume(resume_id):
-    results = matches_collection.find(
-        {"resume_id": ObjectId(resume_id)}
-    )
+async def get_matches_for_resume(resume_id):
+    cursor = matches_collection.find({"resume_id": ObjectId(resume_id)})
+    results = await cursor.to_list(length=None)
     return [serialize_match(doc) for doc in results]
 
 
-def get_matches_for_jd(jd_id):
-    results = matches_collection.find(
-        {"matches.jd_id": ObjectId(jd_id)}
-    )
+async def get_matches_for_jd(jd_id):
+    cursor = matches_collection.find({"jd_id": ObjectId(jd_id)})
+    results = await cursor.to_list(length=None)
     return [serialize_match(doc) for doc in results]
 
-def get_match_count_per_jd():
-    """
-    Returns a dictionary of JD ID → number of matched resumes
-    """
+
+async def get_match_count_per_jd():
     pipeline = [
-        {"$unwind": "$matches"},  # flatten matches array
-        {"$group": {
-            "_id": "$matches.jd_id",
-            "count": {"$sum": 1}
-        }}
+        {"$unwind": "$matches"},
+        {"$group": {"_id": "$jd_id", "count": {"$sum": 1}}}
     ]
-    results = list(matches_collection.aggregate(pipeline))
-    
-    # Convert ObjectId to string
-    match_count = {}
-    for r in results:
-        match_count[str(r["_id"])] = r["count"]
+    cursor = matches_collection.aggregate(pipeline)
+    results = await cursor.to_list(length=None)
+
+    match_count = {str(r["_id"]): r["count"] for r in results}
     return match_count

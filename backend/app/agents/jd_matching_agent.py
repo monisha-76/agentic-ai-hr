@@ -13,13 +13,16 @@ class JDMatchingAgent:
         for jd in jds:
             jd_skills = jd.get("skills", [])
             matched_skills = list(set(resume_skills) & set(jd_skills))
+            extra_skills = list(set(resume_skills) - set(jd_skills))
             score = len(matched_skills) / max(len(jd_skills), 1)
 
             results.append({
                 "jd_id": str(jd["_id"]),
                 "title": jd.get("title"),
                 "score": round(score, 2),
-                "matched_skills": matched_skills
+                "matched_skills": matched_skills,
+                "extra_skills": extra_skills,
+                "rank":1
             })
 
         # Sort by score descending
