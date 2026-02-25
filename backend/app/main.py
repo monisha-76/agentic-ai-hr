@@ -18,6 +18,8 @@ from app.routes.admin_routes import router as admin_router
 from app.routes.candidate_routes import router as candidate_router
 from app.routes.skill_routes import router as skill_router
 from app.routes.jd_match_routes import router as jd_match_router
+from app.routes.profile_routes import router as profile_router
+
 
 app = FastAPI(title="Agentic AI Backend")
 
@@ -43,6 +45,8 @@ app.include_router(admin_router)
 app.include_router(candidate_router)
 app.include_router(skill_router)
 app.include_router(jd_match_router)
+app.include_router(profile_router)
+
 
 
 
@@ -128,7 +132,7 @@ async def upload_resume(
                 "matches": [match_result],
                 "created_at": datetime.utcnow()
             }
-            matches_collection.insert_one(match_doc)
+            await matches_collection.insert_one(match_doc)
 
         return {
             "message": "Resume uploaded, skills extracted & matched with JD!",

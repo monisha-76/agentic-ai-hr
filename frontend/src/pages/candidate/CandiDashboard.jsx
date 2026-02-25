@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import StatCard from "../../components/StatCard";
 import JDCard from "../../components/JDCard";
 import api from "../../api/api";
+import CandidateHeader from "./CandidateHeader";
+import { useNavigate } from "react-router-dom";
+
 
 const CandidateDashboard = () => {
   const [jds, setJDs] = useState([]);
@@ -20,6 +23,10 @@ const CandidateDashboard = () => {
     resume: null
   });
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  const [showMenu, setShowMenu] = useState(false);
+  const [userName, setUserName] = useState("");
 
 
   const fetchJDs = async () => {
@@ -42,10 +49,7 @@ const CandidateDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    fetchJDs();
-    fetchStats();
-  }, []);
+  
 
   const handleApplyClick = (jd) => {
     setSelectedJD(jd);
@@ -91,15 +95,28 @@ const CandidateDashboard = () => {
       setSubmitting(false);
     }
   };
+  const fetchProfile = async () => {
+  try {
+    const res = await api.get("/candidate/profile");
+    setUserName(res.data.name);
+  } catch (err) {
+    console.error("Failed to load profile");
+  }
+};
+useEffect(() => {
+  fetchJDs();
+  fetchStats();
+  fetchProfile();
+}, []);
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-8 py-4">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Candidate Dashboard
-        </h1>
-      </header>
+<CandidateHeader title="Candidate Dashboard" />
+
+
 
       <div className="p-8 max-w-7xl mx-auto">
         {/* Stats */}
@@ -107,17 +124,17 @@ const CandidateDashboard = () => {
           <StatCard
             title="Total Job Openings"
             value={jds.length}
-            color="bg-gray-500"
+            color="bg-orange-400"
           />
           <StatCard
             title="My Applications"
             value={stats.myApplications}
-            color="bg-gray-500 text-black"
+            color="bg-orange-400"
           />
           <StatCard
             title="Total Applications"
             value={stats.totalApplications}
-            color="bg-gray-500 text-black"
+            color="bg-orange-400"
           />
         </div>
 

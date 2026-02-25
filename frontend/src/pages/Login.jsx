@@ -8,26 +8,36 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
 
   try {
     const res = await loginUser({ email, password });
 
-    // Save token to localStorage
+    console.log(res.data); // DEBUG
+
+    // Save token
     localStorage.setItem("token", res.data.token);
 
-    // Redirect based on role
+    // Save username safely
+    if (res.data.user?.name) {
+      localStorage.setItem("userName", res.data.user.name);
+    } else {
+      localStorage.setItem("userName", "Admin");
+    }
+
+    // Redirect
     if (res.data.role === "admin") {
       window.location.href = "/admin/admindashboard";
     } else {
       window.location.href = "/candidate/Candidashboard";
     }
+
   } catch (err) {
+    console.error(err);
     alert("Invalid credentials");
   }
 };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
       <div className="bg-white p-8 rounded-xl shadow-lg w-96">
@@ -61,3 +71,4 @@ export default function Login() {
     </div>
   );
 }
+

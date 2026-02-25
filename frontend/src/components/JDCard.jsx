@@ -1,4 +1,6 @@
+import { useNavigate } from "react-router-dom";
 const JDCard = ({ jd, isCandidate = false, onApply, onDelete }) => {
+  const navigate = useNavigate();
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex justify-between items-start">
       {/* Left content */}
@@ -32,7 +34,10 @@ const JDCard = ({ jd, isCandidate = false, onApply, onDelete }) => {
           </button>
         ) : (
           <>
-            <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+                       <button
+              onClick={() => navigate(`/admin/matches/${jd._id}`)}
+              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
+            >
               View Matches
             </button>
 
