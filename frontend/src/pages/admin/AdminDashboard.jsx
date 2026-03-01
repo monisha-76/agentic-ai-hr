@@ -20,6 +20,7 @@ const [uploading, setUploading] = useState(false);
   });
   const [selectedJD, setSelectedJD] = useState(null);
   const [loading, setLoading] = useState(true);
+   const [search, setSearch] = useState(""); 
 
   // ✅ Fetch Admin Stats
   const fetchStats = async () => {
@@ -98,6 +99,9 @@ const handleUploadJD = async () => {
   }
 };
 
+const filteredJDs = jds.filter((jd) =>
+    jd.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -131,31 +135,54 @@ const handleUploadJD = async () => {
         </div>
 
         {/* JD Header */}
-        <div className="flex justify-between items-center mt-10">
-          <h2 className="text-xl font-semibold">Job Descriptions</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-          onClick={()=>setUploadModalOpen(true)}>
-            
-            + Upload JD
-          </button>
-        </div>
+        {/* JD Header */}
+<div className="flex flex-col md:flex-row md:items-center md:justify-between mt-10 gap-4">
+
+  <h2 className="text-xl font-semibold">Job Descriptions</h2>
+
+  {/* Search Bar */}
+  <div className="relative w-full md:w-96">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+      🔍
+    </span>
+
+    <input
+      type="text"
+      placeholder="Search job titles..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 shadow-sm 
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                 transition"
+    />
+  </div>
+
+  <button
+    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    onClick={() => setUploadModalOpen(true)}
+  >
+    + Upload JD
+  </button>
+
+</div>
 
         {/* JD List */}
-        <div className="mt-6 space-y-4">
-          {loading && <p>Loading JDs...</p>}
+<div className="mt-6 space-y-4">
+  {loading && <p>Loading JDs...</p>}
 
-          {!loading && jds.length === 0 && (
-            <p className="text-gray-500">No Job Descriptions found</p>
-          )}
+  {!loading && filteredJDs.length === 0 && (
+    <p className="text-gray-500">No Job Descriptions found</p>
+  )}
 
-          {jds.map((jd) => (
-            <JDCard
-              key={jd._id}
-              jd={jd}
-              onDelete={() => setSelectedJD(jd)}
-            />
-          ))}
-        </div>
+  {!loading &&
+    filteredJDs.map((jd) => (
+      <JDCard
+        key={jd._id}
+        jd={jd}
+        onDelete={() => setSelectedJD(jd)}
+      />
+    ))}
+</div>
       </div>
 
       {/* Confirm Delete */}

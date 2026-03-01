@@ -17,6 +17,7 @@ resumes_collection = database["resumes"]
 jd_collection = database["job_descriptions"]
 matches_collection = database["matches"]
 users_collection = database["users"]
+profiles_collection = database["profiles"]   # ✅ added
 
 
 # =========================
@@ -52,13 +53,12 @@ async def get_matches_for_jd(
         raise HTTPException(status_code=403, detail="Admin access only")
 
     try:
-        jd_object_id = ObjectId(jd_id)
+        ObjectId(jd_id)
     except:
         raise HTTPException(status_code=400, detail="Invalid JD ID")
 
-    # Find matches containing this JD
     cursor = matches_collection.find({
-        "matches.jd_id": jd_id   # stored as string inside matches array
+        "matches.jd_id": jd_id
     })
 
     results = []
@@ -69,10 +69,20 @@ async def get_matches_for_jd(
         candidate_email = doc.get("candidate_email")
         resume_id = str(doc.get("resume_id"))
 
+        # ✅ candidate_id from resume document
+        resume_doc = await resumes_collection.find_one(
+            {"_id": ObjectId(resume_id)}
+        )
+
+        candidate_id = None
+        if resume_doc:
+            candidate_id = resume_doc.get("candidate_id")
+
         for match in doc.get("matches", []):
             if str(match.get("jd_id")) == jd_id:
 
                 results.append({
+                    "candidate_id": candidate_id,   # ✅ NEW FIELD
                     "resume_id": resume_id,
                     "name": candidate_name,
                     "email": candidate_email,
@@ -82,38 +92,33 @@ async def get_matches_for_jd(
                     "rank": match.get("rank", 0)
                 })
 
-    # Sort by rank
     results = sorted(results, key=lambda x: x["rank"])
 
     return results
 
 
 # =========================
-# Get Candidate Profile
+# Get Candidate Profile (using candidate_id)
 # =========================
-@router.get("/candidate/{resume_id}")
+@router.get("/candidate/{candidate_id}")
 async def get_candidate_profile(
-    resume_id: str,
+    candidate_id: str,
     current_user: dict = Depends(get_current_user)
 ):
 
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access only")
 
-    try:
-        resume = await resumes_collection.find_one({
-            "_id": ObjectId(resume_id)
-        })
-    except:
-        raise HTTPException(status_code=400, detail="Invalid Resume ID")
+    profile = await profiles_collection.find_one({
+        "candidate_id": candidate_id
+    })
 
-    if not resume:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
 
-    resume["_id"] = str(resume["_id"])
+    profile["_id"] = str(profile["_id"])
 
-    return resume
-
+    return profile
 
 # =========================
 # Send Email to Candidate
@@ -128,15 +133,37 @@ async def send_email(
         raise HTTPException(status_code=403, detail="Admin access only")
 
     email = payload.get("email")
-    subject = payload.get("subject")
-    message = payload.get("message")
+    name = payload.get("name")
+    job_title = payload.get("job_title", "the position")
 
-    if not email or not subject or not message:
-        raise HTTPException(status_code=400, detail="Missing fields")
+    if not email:
+        raise HTTPException(status_code=400, detail="Missing email")
 
     try:
-        sender_email = "yourgmail@gmail.com"
-        sender_password = "your_app_password"
+        sender_email = "monishamoorthy.16@gmail.com"
+        sender_password = "xchzsbixtekhtobv"
+
+        subject = f"Shortlisted for Next Round – {job_title}"
+
+        message = f"""
+Dear {name},
+
+Congratulations!
+
+We are pleased to inform you that you have been shortlisted for the role of {job_title} based on your profile evaluation.
+
+Our recruitment process includes the following rounds:
+
+• DSA and Aptitute 
+• Technical Interview
+• Managerial Discussion
+• HR Round
+
+Our recruitment team will contact you shortly with further details.
+
+Best regards,
+Recruitment Team
+"""
 
         msg = MIMEMultipart()
         msg["From"] = sender_email
@@ -154,9 +181,11 @@ async def send_email(
         return {"message": "Email sent successfully"}
 
     except Exception as e:
+        print("EMAIL ERROR:", e) 
         raise HTTPException(status_code=500, detail=str(e))
 
-        # =========================
+
+# =========================
 # Get JD Details
 # =========================
 @router.get("/jd/{jd_id}")

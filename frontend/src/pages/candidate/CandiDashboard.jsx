@@ -27,7 +27,7 @@ const CandidateDashboard = () => {
 
   const [showMenu, setShowMenu] = useState(false);
   const [userName, setUserName] = useState("");
-
+  const [search, setSearch] = useState("");
 
   const fetchJDs = async () => {
     try {
@@ -110,6 +110,11 @@ useEffect(() => {
 }, []);
 
 
+const filteredJDs = jds.filter((jd) =>
+  (jd.title + jd.description)
+    .toLowerCase()
+    .includes(search.toLowerCase())
+);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -139,13 +144,23 @@ useEffect(() => {
         </div>
 
         {/* Search */}
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            className="w-full bg-white border border-gray-300 rounded-xl px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+       {/* Search */}
+<div className="mb-6">
+  <div className="relative max-w-md">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+      🔍
+    </span>
+
+    <input
+      type="text"
+      placeholder="Search jobs..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3 
+                 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    />
+  </div>
+</div>
 
         {/* Job Listings */}
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -153,20 +168,22 @@ useEffect(() => {
         </h2>
 
         <div className="space-y-4">
-          {loading && <p className="text-gray-500">Loading jobs...</p>}
-          {!loading && jds.length === 0 && (
-            <p className="text-gray-500">No job openings available</p>
-          )}
-          {!loading &&
-            jds.map((jd) => (
-              <JDCard
-                key={jd._id}
-                jd={jd}
-                isCandidate={true}
-                onApply={() => handleApplyClick(jd)}
-              />
-            ))}
-        </div>
+  {loading && <p className="text-gray-500">Loading jobs...</p>}
+
+  {!loading && filteredJDs.length === 0 && (
+    <p className="text-gray-500">No job openings found</p>
+  )}
+
+  {!loading &&
+    filteredJDs.map((jd) => (
+      <JDCard
+        key={jd._id}
+        jd={jd}
+        isCandidate={true}
+        onApply={() => handleApplyClick(jd)}
+      />
+    ))}
+</div>
       </div>
 
       {/* Apply Modal */}

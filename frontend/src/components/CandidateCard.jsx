@@ -77,14 +77,14 @@ const CandidateCard = ({ candidate, onViewProfile, onSendEmail }) => {
       {/* Buttons */}
       <div className="flex gap-3">
         <button
-          onClick={() => onViewProfile(candidate.resume_id)}
+          onClick={() => onViewProfile(candidate.candidate_id)}
           className="flex-1 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-100"
         >
           View Profile
         </button>
 
         <button
-          onClick={() => onSendEmail(candidate.email)}
+          onClick={() => onSendEmail(candidate)}   
           className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm hover:bg-blue-700 flex items-center justify-center gap-2"
         >
           <Mail size={16} />

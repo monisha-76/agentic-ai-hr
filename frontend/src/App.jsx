@@ -6,18 +6,22 @@ import Signup from "./pages/Signup"
 import MyApplication from "./pages/candidate/MyApplication";
 import Profile from "./pages/candidate/Profile"
 import MatchedCandidates from "./pages/admin/MatchedCandidates";
+import { Toaster } from "react-hot-toast";
  
 
 function App() {
   return (
+    
     <BrowserRouter>
+    <Toaster position="top-right" />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/admin/admindashboard" element={<AdminDashboard />} />
         <Route path="/candidate/Candidashboard" element={<CandiDashboard />} />
         <Route path="/candidate/applications" element={<MyApplication />} />
-        <Route path="/candidate/profile" element={<Profile/>}/>
+        <Route path="/admin/candidate/:candidateId" element={<Profile />} />
+        <Route path="/candidate/profile" element={<Profile />} />
         <Route path="/admin/matches/:jdId" element={<MatchedCandidates />} />
 
       </Routes>

@@ -2,42 +2,56 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import CandidateCard from "../../components/CandidateCard";
 import api from "../../api/api";
+import toast from "react-hot-toast";
 
 const MatchedCandidates = () => {
   const { jdId } = useParams();
   const navigate = useNavigate();
 
   const [candidates, setCandidates] = useState([]);
-  const [jobTitle, setJobTitle] = useState("");   // ✅ NEW
+  const [jobTitle, setJobTitle] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchMatches();
   }, []);
 
-const fetchMatches = async () => {
-  try {
-    // Matches
-    const matchRes = await api.get(`/admin/jd/${jdId}/matches`);
-    const matchData = Array.isArray(matchRes.data) ? matchRes.data : [];
-    setCandidates(matchData);
+  const fetchMatches = async () => {
+    try {
+      const matchRes = await api.get(`/admin/jd/${jdId}/matches`);
+      const matchData = Array.isArray(matchRes.data) ? matchRes.data : [];
+      setCandidates(matchData);
 
-    // Job details
-    const jobRes = await api.get(`/admin/jd/${jdId}`);
-    setJobTitle(jobRes.data?.title || "");
+      const jobRes = await api.get(`/admin/jd/${jdId}`);
+      setJobTitle(jobRes.data?.title || "");
 
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-  const handleViewProfile = (resumeId) => {
-    navigate(`/admin/candidate/${resumeId}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load matches");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSendEmail = (email) => {
-    alert(`Send email to: ${email}`);
+  const handleViewProfile = (candidateId) => {
+    navigate(`/admin/candidate/${candidateId}`);
+  };
+
+  // ✅ EMAIL SEND WITH TOAST
+  const handleSendEmail = async (candidate) => {
+    try {
+      await api.post("/admin/send-email", {
+        email: candidate.email,
+        name: candidate.name,
+        job_title: jobTitle,
+      });
+
+      toast.success(`Email sent to ${candidate.name}`);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Email failed to send");
+    }
   };
 
   // Stats
